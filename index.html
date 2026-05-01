@@ -86,6 +86,7 @@ button {
   font-size: clamp(22px, 6vw, 30px);
   font-weight: 850;
   line-height: 1.35;
+  word-break: break-word;
 }
 
 textarea {
@@ -130,6 +131,12 @@ textarea {
   font-size: 21px;
 }
 
+.status-partial {
+  color: #d97706;
+  font-weight: 900;
+  font-size: 21px;
+}
+
 .correct-sentence {
   color: #047857;
   font-size: 20px;
@@ -141,11 +148,17 @@ textarea {
 .summary {
   line-height: 1.65;
   font-size: 17px;
+  white-space: pre-wrap;
 }
 
 .summary {
   background: #eef2ff;
   border-left: 5px solid #6366f1;
+}
+
+.loading {
+  color: #6d28d9;
+  font-weight: 900;
 }
 
 @media (min-width: 700px) {
@@ -191,21 +204,46 @@ textarea {
 </div>
 
 <script>
-const WORKER_URL = "muddy-butterfly-d30e.onurmx2.workers.dev";
+const WORKER_URL = "https://muddy-butterfly-d30e.onurmx2.workers.dev";
 
 let currentQuestion = "";
 
-async function ask(type, payload){
-  const res = await fetch(WORKER_URL, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      type,
-      ...payload
-    })
-  });
+function escapeHTML(text) {
+  return String(text || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
-  return await res.json();
+async function ask(type, payload){
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ type, ...payload }),
+      signal: controller.signal
+    });
+
+    const text = await res.text();
+
+    if (!res.ok) {
+      throw new Error("HTTP " + res.status + " - " + text);
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error("JSON okunamadı: " + text);
+    }
+
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function newQuestion(){
@@ -213,17 +251,23 @@ async function newQuestion(){
 
   document.getElementById("result").innerHTML = "";
   document.getElementById("answer").value = "";
-  document.getElementById("question").innerText = "Üretiliyor...";
+  document.getElementById("question").innerHTML = '<span class="loading">Üretiliyor...</span>';
 
-  const data = await ask("question", { level });
+  try {
+    const data = await ask("question", { level });
 
-  if (data.error) {
-    document.getElementById("question").innerText = data.error;
-    return;
+    if (data.error) {
+      document.getElementById("question").innerText = "Hata: " + data.error;
+      return;
+    }
+
+    currentQuestion = data.question;
+    document.getElementById("question").innerText = currentQuestion || "Boş cevap geldi.";
+
+  } catch (err) {
+    document.getElementById("question").innerText =
+      "Bağlantı hatası: " + err.message;
   }
-
-  currentQuestion = data.question;
-  document.getElementById("question").innerText = currentQuestion;
 }
 
 async function checkAnswer(){
@@ -239,53 +283,71 @@ async function checkAnswer(){
     return;
   }
 
-  document.getElementById("result").innerHTML = "Kontrol ediliyor...";
-
-  const data = await ask("check", {
-    question: currentQuestion,
-    answer
-  });
-
-  if (data.error) {
-    document.getElementById("result").innerHTML = `
-      <div class="result-box">
-        <div class="result-title">Hata</div>
-        <div class="explanation">${data.error}</div>
-      </div>
-    `;
-    return;
-  }
-
-  const statusClass =
-    data.durum.includes("Doğru") && !data.durum.includes("Kısmen")
-      ? "status-correct"
-      : "status-wrong";
-
   document.getElementById("result").innerHTML = `
-    <div class="result-grid">
-
-      <div class="result-box">
-        <div class="result-title">Durum</div>
-        <div class="${statusClass}">${data.durum}</div>
-      </div>
-
-      <div class="result-box">
-        <div class="result-title">Doğru Cümle</div>
-        <div class="correct-sentence">${data.dogru}</div>
-      </div>
-
-      <div class="result-box">
-        <div class="result-title">Kısa Açıklama</div>
-        <div class="explanation">${data.aciklama}</div>
-      </div>
-
-      <div class="result-box summary">
-        <div class="result-title">Konu Özeti</div>
-        <div>${data.ozet}</div>
-      </div>
-
+    <div class="result-box">
+      <div class="result-title">Kontrol</div>
+      <div class="loading">Kontrol ediliyor...</div>
     </div>
   `;
+
+  try {
+    const data = await ask("check", {
+      question: currentQuestion,
+      answer
+    });
+
+    if (data.error) {
+      document.getElementById("result").innerHTML = `
+        <div class="result-box">
+          <div class="result-title">Hata</div>
+          <div class="explanation">${escapeHTML(data.error)}</div>
+        </div>
+      `;
+      return;
+    }
+
+    let statusClass = "status-wrong";
+
+    if ((data.durum || "").includes("Kısmen")) {
+      statusClass = "status-partial";
+    } else if ((data.durum || "").includes("Doğru")) {
+      statusClass = "status-correct";
+    }
+
+    document.getElementById("result").innerHTML = `
+      <div class="result-grid">
+
+        <div class="result-box">
+          <div class="result-title">Durum</div>
+          <div class="${statusClass}">${escapeHTML(data.durum)}</div>
+        </div>
+
+        <div class="result-box">
+          <div class="result-title">Doğru Cümle</div>
+          <div class="correct-sentence">${escapeHTML(data.dogru)}</div>
+        </div>
+
+        <div class="result-box">
+          <div class="result-title">Kısa Açıklama</div>
+          <div class="explanation">${escapeHTML(data.aciklama)}</div>
+        </div>
+
+        <div class="result-box summary">
+          <div class="result-title">Konu Özeti</div>
+          <div class="summary-text">${escapeHTML(data.ozet)}</div>
+        </div>
+
+      </div>
+    `;
+
+  } catch (err) {
+    document.getElementById("result").innerHTML = `
+      <div class="result-box">
+        <div class="result-title">Bağlantı Hatası</div>
+        <div class="explanation">${escapeHTML(err.message)}</div>
+      </div>
+    `;
+  }
 }
 </script>
 
