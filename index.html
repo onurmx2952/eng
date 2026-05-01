@@ -4,8 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>İngilizce Pratik</title>
+
 <style>
 * { box-sizing: border-box; }
+
 body {
   font-family: "Segoe UI", Arial, sans-serif;
   background: linear-gradient(135deg, #f5f3ff, #eef2ff);
@@ -13,250 +15,279 @@ body {
   padding: 14px;
   color: #111827;
 }
+
 .container {
   width: 100%;
   max-width: 760px;
   margin: auto;
 }
+
 .title {
   text-align: center;
-  font-size: clamp(26px, 7vw, 36px);
-  font-weight: 800;
-  margin-top: 10px;
+  font-size: clamp(28px, 8vw, 42px);
+  font-weight: 900;
+  margin-top: 18px;
 }
+
 .subtitle {
   text-align: center;
   color: #6b7280;
-  margin: 8px 0 18px;
-  font-size: clamp(15px, 4vw, 18px);
+  margin: 8px 0 22px;
+  font-size: clamp(16px, 4vw, 20px);
 }
+
 .card {
   background: white;
-  padding: 16px;
-  border-radius: 18px;
+  padding: 18px;
+  border-radius: 22px;
   box-shadow: 0 12px 35px rgba(0,0,0,0.08);
   border: 1px solid #e5e7eb;
 }
+
 .top-bar {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 14px;
 }
+
 select, button, textarea {
   width: 100%;
-  padding: 15px;
-  font-size: 17px;
-  border-radius: 14px;
+  padding: 16px;
+  font-size: 18px;
+  border-radius: 16px;
   border: 1px solid #d1d5db;
 }
+
 button {
   background: linear-gradient(90deg, #7c3aed, #6366f1);
   color: white;
   border: none;
   cursor: pointer;
-  font-weight: 700;
-  min-height: 52px;
+  font-weight: 800;
+  min-height: 56px;
 }
+
 .question-box {
-  margin-top: 18px;
-  padding: 16px;
-  border-radius: 16px;
+  margin-top: 20px;
+  padding: 18px;
+  border-radius: 18px;
   background: #fafafa;
   border: 1px solid #e5e7eb;
 }
+
 .label {
-  font-weight: 800;
+  font-weight: 900;
   color: #6d28d9;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  font-size: 20px;
 }
+
 .question {
-  font-size: clamp(20px, 5vw, 26px);
-  font-weight: 700;
+  font-size: clamp(22px, 6vw, 30px);
+  font-weight: 850;
   line-height: 1.35;
 }
+
 textarea {
-  margin-top: 16px;
+  margin-top: 18px;
   resize: vertical;
-  min-height: 120px;
-  font-size: 18px;
+  min-height: 125px;
+  font-size: 19px;
   line-height: 1.45;
 }
+
 .result {
   margin-top: 20px;
 }
+
 .result-grid {
   display: grid;
   gap: 14px;
 }
+
 .result-box {
   padding: 16px;
   border-radius: 16px;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
 }
+
 .result-title {
-  font-weight: 800;
+  font-weight: 900;
   margin-bottom: 8px;
-  font-size: 17px;
+  font-size: 18px;
 }
+
 .status-correct {
   color: #16a34a;
   font-weight: 900;
-  font-size: 20px;
+  font-size: 21px;
 }
+
 .status-wrong {
   color: #dc2626;
   font-weight: 900;
-  font-size: 20px;
+  font-size: 21px;
 }
+
 .correct-sentence {
   color: #047857;
-  font-size: 19px;
-  font-weight: 800;
+  font-size: 20px;
+  font-weight: 850;
   line-height: 1.4;
 }
+
 .explanation,
 .summary {
   line-height: 1.65;
-  font-size: 16.5px;
+  font-size: 17px;
 }
+
 .summary {
   background: #eef2ff;
   border-left: 5px solid #6366f1;
 }
+
 @media (min-width: 700px) {
   body { padding: 30px; }
   .card { padding: 24px; }
-  .top-bar {
-    grid-template-columns: 1fr 1fr;
-  }
+  .top-bar { grid-template-columns: 1fr 1fr; }
 }
 </style>
 </head>
+
 <body>
+
 <div class="container">
+
   <div class="title">İngilizce Pratik</div>
   <div class="subtitle">Cümleyi çevir, hatanı öğren, ilerle 🚀</div>
+
   <div class="card">
+
     <div class="top-bar">
       <select id="level">
         <option>A1</option>
         <option selected>A2</option>
         <option>B1</option>
       </select>
+
       <button onclick="newQuestion()">Yeni Soru</button>
     </div>
+
     <div class="question-box">
       <div class="label">Soru</div>
       <div class="question" id="question">Başlamak için “Yeni Soru” butonuna bas.</div>
     </div>
+
     <textarea id="answer" placeholder="İngilizce cevabını yaz..."></textarea>
+
     <button onclick="checkAnswer()">Kontrol Et</button>
+
     <div id="result" class="result"></div>
+
   </div>
+
 </div>
+
 <script>
-const API_KEY = "AIzaSyBtrBb00fJgFmgr9m8t6qORfJt8dgUEWoA";
-const MODEL = "gemini-2.5-flash";
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+const WORKER_URL = "https://onurmx2.cloudflareaccess.com/cdn-cgi/access/certs";
+
 let currentQuestion = "";
-async function ask(prompt){
-  const res = await fetch(`${API_URL}?key=${API_KEY}`, {
+
+async function ask(type, payload){
+  const res = await fetch(WORKER_URL, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }]
+      type,
+      ...payload
     })
   });
-  const data = await res.json();
-  if (data.error) {
-    return JSON.stringify({
-      durum: "Yanlış",
-      dogru: "API hatası",
-      aciklama: data.error.message,
-      ozet: "API key veya model adını kontrol et."
-    });
-  }
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+  return await res.json();
 }
+
 async function newQuestion(){
   const level = document.getElementById("level").value;
+
   document.getElementById("result").innerHTML = "";
   document.getElementById("answer").value = "";
   document.getElementById("question").innerText = "Üretiliyor...";
-  const prompt = `
-${level} seviyesinde günlük hayattan TEK Türkçe cümle üret.
-Sadece cümleyi yaz.
-Açıklama yapma.
-`;
-  currentQuestion = await ask(prompt);
+
+  const data = await ask("question", { level });
+
+  if (data.error) {
+    document.getElementById("question").innerText = data.error;
+    return;
+  }
+
+  currentQuestion = data.question;
   document.getElementById("question").innerText = currentQuestion;
 }
+
 async function checkAnswer(){
   const answer = document.getElementById("answer").value.trim();
+
   if (!currentQuestion) {
     alert("Önce yeni soru oluştur.");
     return;
   }
+
   if (!answer) {
     alert("Cevap yaz.");
     return;
   }
-  document.getElementById("result").innerHTML = "";
-  const prompt = `
-Türkçe cümle: "${currentQuestion}"
-Kullanıcının İngilizce çevirisi: "${answer}"
-Cevabı kontrol et.
-SADECE geçerli JSON döndür.
-Markdown kullanma.
-Kod bloğu kullanma.
-Format şu olsun:
-{
-  "durum": "Doğru / Kısmen doğru / Yanlış",
-  "dogru": "Doğru İngilizce cümle",
-  "aciklama": "Kısa açıklama",
-  "ozet": "Konu özeti. Neden böyle olduğunu açıkla. Kullanıcının hatasına göre mantığı anlat. 1 doğru ve 1 yanlış örnek ver."
-}
-`;
-  let raw = await ask(prompt);
-  raw = raw.replace(/```json/g, "").replace(/```/g, "").trim();
-  let data;
-  try {
-    data = JSON.parse(raw);
-  } catch {
+
+  document.getElementById("result").innerHTML = "Kontrol ediliyor...";
+
+  const data = await ask("check", {
+    question: currentQuestion,
+    answer
+  });
+
+  if (data.error) {
     document.getElementById("result").innerHTML = `
       <div class="result-box">
-        <div class="result-title">Cevap</div>
-        <div class="explanation">${raw}</div>
+        <div class="result-title">Hata</div>
+        <div class="explanation">${data.error}</div>
       </div>
     `;
     return;
   }
+
   const statusClass =
     data.durum.includes("Doğru") && !data.durum.includes("Kısmen")
       ? "status-correct"
       : "status-wrong";
+
   document.getElementById("result").innerHTML = `
     <div class="result-grid">
+
       <div class="result-box">
         <div class="result-title">Durum</div>
         <div class="${statusClass}">${data.durum}</div>
       </div>
+
       <div class="result-box">
         <div class="result-title">Doğru Cümle</div>
         <div class="correct-sentence">${data.dogru}</div>
       </div>
+
       <div class="result-box">
         <div class="result-title">Kısa Açıklama</div>
         <div class="explanation">${data.aciklama}</div>
       </div>
+
       <div class="result-box summary">
         <div class="result-title">Konu Özeti</div>
         <div>${data.ozet}</div>
       </div>
+
     </div>
   `;
 }
 </script>
+
 </body>
 </html>
